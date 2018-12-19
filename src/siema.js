@@ -56,6 +56,7 @@ export default class Siema {
       threshold: 20,
       loop: false,
       rtl: false,
+      gutter: 0,
       onInit: () => {},
       onChange: () => {},
     };
@@ -162,8 +163,8 @@ export default class Siema {
 
     // Create frame and apply styling
     this.sliderFrame = document.createElement('div');
-    this.sliderFrame.style.width = `${widthItem * itemsToBuild}px`;
-    this.enableTransition();
+    // (item width + gutter) * number of items
+    this.sliderFrame.style.width = `${(widthItem + this.config.gutter) * itemsToBuild}px`;
 
     if (this.config.draggable) {
       this.selector.style.cursor = '-webkit-grab';
@@ -199,13 +200,25 @@ export default class Siema {
 
     // Go to currently active slide after initial build
     this.slideToCurrent();
+
+    // Wait with the transition until the current slide is displayed
+    const that = this;
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        that.enableTransition();
+      });
+    });
   }
 
   buildSliderFrameItem(elm) {
     const elementContainer = document.createElement('div');
     elementContainer.style.cssFloat = this.config.rtl ? 'right' : 'left';
     elementContainer.style.float = this.config.rtl ? 'right' : 'left';
-    elementContainer.style.width = `${this.config.loop ? 100 / (this.innerElements.length + (this.perPage * 2)) : 100 / (this.innerElements.length)}%`;
+    // Calculate item width (parent width / number of elements - gutter)
+    elementContainer.style.width = `${((this.sliderFrame.style.width.slice(0, -2)) / this.innerElements.length) - this.config.gutter}px`;
+    if (this.config.gutter) {
+      elementContainer.style.margin = `0 ${this.config.gutter / 2}px`;
+    }
     elementContainer.appendChild(elm);
     return elementContainer;
   }
@@ -363,16 +376,22 @@ export default class Siema {
    * Moves sliders frame to position of currently active slide
    */
   slideToCurrent(enableTransition) {
+    const rtlFactor = (this.config.rtl ? 1 : -1);
     const currentSlide = this.config.loop ? this.currentSlide + this.perPage : this.currentSlide;
-    const offset = (this.config.rtl ? 1 : -1) * currentSlide * (this.selectorWidth / this.perPage);
+    /**
+     * calculate offset inside the container current slide
+     * (current slide * ((slider width / per page) + the gutter)) + half of the gutter (so the gutter is out of frame)
+     */
+    const offset = (rtlFactor * currentSlide * ((this.selectorWidth / this.perPage) + this.config.gutter)) + (rtlFactor * (this.config.gutter / 2));
 
     if (enableTransition) {
       // This one is tricky, I know but this is a perfect explanation:
       // https://youtu.be/cCOL7MC4Pl0
+      const that = this;
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
-          this.enableTransition();
-          this.sliderFrame.style[this.transformProperty] = `translate3d(${offset}px, 0, 0)`;
+          that.enableTransition();
+          that.sliderFrame.style[that.transformProperty] = `translate3d(${offset}px, 0, 0)`;
         });
       });
     }
