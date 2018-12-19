@@ -22,7 +22,7 @@ export default class Siema {
     this.resolveSlidesNumber();
 
     // Create global references
-    this.selectorWidth = this.selector.offsetWidth;
+    this.selectorWidth = this.selector.getBoundingClientRect().width;
     this.innerElements = [].slice.call(this.selector.children);
     this.currentSlide = this.config.loop ?
       this.config.startIndex % this.innerElements.length :
@@ -416,7 +416,7 @@ export default class Siema {
       this.currentSlide = this.innerElements.length <= this.perPage ? 0 : this.innerElements.length - this.perPage;
     }
 
-    this.selectorWidth = this.selector.offsetWidth;
+    this.selectorWidth = this.selector.getBoundingClientRect().width;
 
     this.buildSliderFrame();
   }
